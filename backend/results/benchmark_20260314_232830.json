@@ -1,0 +1,14 @@
+[
+    {
+        "model": "tinyllama",
+        "avg_latency": 3.0757589101791383,
+        "avg_ttft": 0.12769534587860107,
+        "tokens_per_sec": 90.3841972398964
+    },
+    {
+        "model": "phi",
+        "avg_latency": 5.752512764930725,
+        "avg_ttft": 0.23738541603088378,
+        "tokens_per_sec": 41.77304941676106
+    }
+]

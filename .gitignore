@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node
+node_modules/
+
+# build files
+dist/
+build/
+
+# OS
+.DS_Store
+
+# uploads
+uploads/
+
+# logs
+*.log

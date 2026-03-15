@@ -1,0 +1,10 @@
+Explain recursion in simple terms.
+What is machine learning?
+Explain quicksort algorithm.
+What is a neural network?
+Write a short story about space exploration.
+Explain binary search.
+What is artificial intelligence?
+Explain the difference between stack and queue.
+What is overfitting in machine learning?
+Explain gradient descent.
