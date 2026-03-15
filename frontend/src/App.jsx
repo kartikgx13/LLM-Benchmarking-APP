@@ -29,7 +29,7 @@ function App() {
   <div className="max-w-6xl mx-auto p-8">
 
     <h1 className="text-4xl font-bold mb-8 text-white">
-      LLM Benchmarking Dashboard
+      LLM Benchmarking App
     </h1>
 <ModelManager refreshTrigger={modelRefresh} />
 
