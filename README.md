@@ -158,6 +158,6 @@ Author
 Kartik Gavande
 
 GitHub
-https://github.com/Kartikg13
+https://github.com/kartikgx13
 
 ⭐ If you find this project useful, consider starring the repository.
