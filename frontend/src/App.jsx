@@ -36,6 +36,9 @@ function App() {
 
 <OtherModels refreshModels={refreshModels} />
 
+
+<SinglePromptTester refreshTrigger={modelRefresh} />
+
 <Toaster
     position="top-right"
     toastOptions={{
@@ -56,7 +59,6 @@ function App() {
 />
 
 <BenchmarkRunner selectedModels={selectedModels} />
-<SinglePromptTester refreshTrigger={modelRefresh} />
   </div>
 
 </div>
