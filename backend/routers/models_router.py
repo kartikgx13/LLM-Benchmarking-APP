@@ -142,3 +142,27 @@ def validate_model(model: str):
         return {"valid": False}
 
     return {"valid": False}
+
+@router.get("/models/gemini")
+def list_gemini_models(apiKey: str):
+
+    url = f"https://generativelanguage.googleapis.com/v1/models?key={apiKey}"
+
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        return {"error": response.text}
+
+    data = response.json()
+
+    models = []
+
+    for m in data.get("models", []):
+        models.append({
+            "name": m.get("name"),
+            "methods": m.get("supportedGenerationMethods", [])
+        })
+
+    return {
+        "models": models
+    }
