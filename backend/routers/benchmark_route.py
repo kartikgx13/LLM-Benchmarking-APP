@@ -272,96 +272,165 @@ def unified_benchmark(request: dict):
         total_tokens = 0
         total_ttft = 0
 
+        model_failed = False
+        error_message = None
+
         for prompt in prompts:
 
-            # -------------------------
-            # OLLAMA FLOW
-            # -------------------------
-            if provider == "ollama":
+            try:
+                # -------------------------
+                # OLLAMA FLOW
+                # -------------------------
+                if provider == "ollama":
 
-                data = {
-                    "model": model_name,
-                    "prompt": prompt,
-                    "stream": True
-                }
+                    data = {
+                        "model": model_name,
+                        "prompt": prompt,
+                        "stream": True
+                    }
 
-                start_time = time.time()
+                    start_time = time.time()
 
-                response = requests.post(
-                    OLLAMA_URL_GENERATE,
-                    json=data,
-                    stream=True
-                )
+                    response = requests.post(
+                        OLLAMA_URL_GENERATE,
+                        json=data,
+                        stream=True
+                    )
 
-                first_token_time = None
-                full_text = ""
-
-                for line in response.iter_lines():
-                    if not line:
-                        continue
-
-                    try:
-                        chunk = json.loads(line.decode("utf-8"))
-                    except:
-                        continue
-
-                    if first_token_time is None:
-                        first_token_time = time.time()
-
-                    if "response" in chunk:
-                        full_text += chunk["response"]
-
-                end_time = time.time()
-
-            # -------------------------
-            # GEMINI FLOW
-            # -------------------------
-            elif provider == "gemini":
-
-                api_key = model_info.get("apiKey")
-
-                if not model_name.startswith("models/"):
-                    model_name_full = f"models/{model_name}"
-                else:
-                    model_name_full = model_name
-
-                url = f"https://generativelanguage.googleapis.com/v1/{model_name_full}:generateContent?key={api_key}"
-
-                payload = {
-                    "contents": [{"parts": [{"text": prompt}]}]
-                }
-
-                start_time = time.time()
-
-                response = requests.post(url, json=payload)
-
-                if response.status_code != 200:
-                    return {"error": response.text}
-
-                data = response.json()
-
-                try:
-                    full_text = data["candidates"][0]["content"]["parts"][0]["text"]
-                except:
+                    first_token_time = None
                     full_text = ""
 
-                first_token_time = start_time  # simulated
-                end_time = time.time()
+                    for line in response.iter_lines():
+                        if not line:
+                            continue
 
-            else:
-                return {"error": f"Unknown provider: {provider}"}
+                        try:
+                            chunk = json.loads(line.decode("utf-8"))
+                        except:
+                            continue
 
-            # -------------------------
-            # COMMON METRICS
-            # -------------------------
-            latency = end_time - start_time
-            ttft = first_token_time - start_time if first_token_time else 0
-            tokens = len(full_text.split())
+                        if first_token_time is None:
+                            first_token_time = time.time()
 
-            total_latency += latency
-            total_ttft += ttft
-            total_tokens += tokens
+                        if "response" in chunk:
+                            full_text += chunk["response"]
 
+                    end_time = time.time()
+
+                # -------------------------
+                # GEMINI FLOW
+                # -------------------------
+                elif provider == "gemini":
+
+                    api_key = model_info.get("apiKey")
+
+                    if not model_name.startswith("models/"):
+                        model_full = f"models/{model_name}"
+                    else:
+                        model_full = model_name
+
+                    url = f"https://generativelanguage.googleapis.com/v1/{model_full}:generateContent?key={api_key}"
+
+                    payload = {
+                        "contents": [{"parts": [{"text": prompt}]}]
+                    }
+
+                    start_time = time.time()
+
+                    response = requests.post(url, json=payload)
+
+                    # ❌ Instead of returning → mark failure and break
+                    if response.status_code != 200:
+                        model_failed = True
+                        error_message = response.text
+                        break
+
+                    data = response.json()
+
+                    try:
+                        full_text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    except:
+                        full_text = ""
+
+                    first_token_time = start_time  # simulated
+                    end_time = time.time()
+                
+                elif provider == "openrouter":
+
+                    api_key = model_info.get("apiKey")
+                
+                    url = "https://openrouter.ai/api/v1/chat/completions"
+                
+                    headers = {
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    }
+                
+                    payload = {
+                        "model": model_name,
+                        "messages": [
+                            {"role": "user", "content": prompt}
+                        ]
+                    }
+                
+                    start_time = time.time()
+                
+                    response = requests.post(url, headers=headers, json=payload)
+                
+                    if response.status_code != 200:
+                        model_failed = True
+                        error_message = response.text
+                        break
+                    
+                    data = response.json()
+                
+                    try:
+                        full_text = data["choices"][0]["message"]["content"]
+                    except:
+                        full_text = ""
+                
+                    first_token_time = start_time  # simulated
+                    end_time = time.time()
+
+                else:
+                    model_failed = True
+                    error_message = f"Unknown provider: {provider}"
+                    break
+
+                # -------------------------
+                # COMMON METRICS
+                # -------------------------
+                latency = end_time - start_time
+                ttft = first_token_time - start_time if first_token_time else 0
+                tokens = len(full_text.split())
+
+                total_latency += latency
+                total_ttft += ttft
+                total_tokens += tokens
+
+                # optional: prevent rate limits
+                time.sleep(0.5)
+
+            except Exception as e:
+                model_failed = True
+                error_message = str(e)
+                break
+
+        # -------------------------
+        # HANDLE FAILED MODEL
+        # -------------------------
+        if model_failed:
+            results.append({
+                "model": model_name,
+                "provider": provider,
+                "status": "failed",
+                "error": error_message
+            })
+            continue
+
+        # -------------------------
+        # AGGREGATE RESULTS
+        # -------------------------
         avg_latency = total_latency / len(prompts)
         avg_ttft = total_ttft / len(prompts)
         tps = total_tokens / total_latency if total_latency > 0 else 0
@@ -369,6 +438,7 @@ def unified_benchmark(request: dict):
         results.append({
             "model": model_name,
             "provider": provider,
+            "status": "success",
             "avg_latency": avg_latency,
             "avg_ttft": avg_ttft,
             "tokens_per_sec": tps,

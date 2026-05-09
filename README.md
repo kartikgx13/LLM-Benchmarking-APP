@@ -132,6 +132,32 @@ http://127.0.0.1:8000
 
 ---
 
+## 🧩 MCP Server (Model Context Protocol)
+
+This repo includes an MCP server that exposes BenchForge functionality as **MCP tools** (stdio transport).
+
+### Run the MCP server
+
+```bash
+cd backend
+pip install -r requirements.txt
+python -m mcp_server.server
+```
+
+### Available MCP tools
+
+- `backend_info`
+- `ollama_health`
+- `list_ollama_models`
+- `get_prompts` / `set_prompts`
+- `run_ollama_benchmark`
+- `run_unified_benchmark`
+- `test_prompt_ollama`
+
+### Example MCP client config
+
+See `backend/mcp_server/mcp.example.json` for a ready-to-copy config snippet.
+
 ### 3️⃣ Install Ollama
 
 Download:
